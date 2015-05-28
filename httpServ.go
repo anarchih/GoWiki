@@ -13,51 +13,72 @@ import (
     "net/http"
     "regexp"
     "fmt"
+    "strings"
 )
 
 var (
     addr = flag.Bool("addr", false, "find open address and print to final-port.txt")
 )
+type Page interface {
+    save() error
+}
 
-type Page struct {
+type SimplePage struct {
     Title string
     Body  []byte
 }
 
-func (p *Page) save() error {
+type IndexPage struct {
+    Title string
+    Body  [][]byte
+}
+
+func (p *SimplePage) save() error {
     filename := "data/" + p.Title + ".txt"
     return ioutil.WriteFile(filename, p.Body, 0600)
 }
 
-func loadPage(title string) (*Page, error) {
+func (p *IndexPage) save() error {
+    filename := "tester"
+    return ioutil.WriteFile(filename, p.Body[0], 0600)
+}
+
+func loadPage(title string) (Page, error) {
     filename := "data/" + title + ".txt"
     body, err := ioutil.ReadFile(filename)
     if err != nil {
         return nil, err
     }
-    return &Page{Title: title, Body: body}, nil
+    return &SimplePage{Title: title, Body: body}, nil
 }
 
 func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
-    p, err := loadPage(title)
-    if err != nil {
-        http.Redirect(w, r, "/edit/"+title, http.StatusFound)
-        return
+    if title != ""{
+        p, err := loadPage(title)
+        if err != nil {
+            http.Redirect(w, r, "/edit/"+title, http.StatusFound)
+            return
+        }
+        renderTemplate(w, "view", p)
+    } else {
+        indexHandler(w, r, title)
     }
-    renderTemplate(w, "view", p)
 }
 
 func editHandler(w http.ResponseWriter, r *http.Request, title string) {
     p, err := loadPage(title)
+    if title == "" {
+        http.Redirect(w, r, "/view/", http.StatusFound)
+    }
     if err != nil {
-        p = &Page{Title: title}
+        p = &SimplePage{Title: title}
     }
     renderTemplate(w, "edit", p)
 }
 
 func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
     body := r.FormValue("body")
-    p := &Page{Title: title, Body: []byte(body)}
+    p := &SimplePage{Title: title, Body: []byte(body)}
     err := p.save()
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -68,24 +89,25 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
 
 func indexHandler(w http.ResponseWriter, r *http.Request, title string) {
     info, _ := ioutil.ReadDir("data/")
-    var byteBody []byte
+    var byteBody [][]byte
     for i := 0; i < len(info); i++ {
-        byteBody = append(byteBody, []byte(info[i].Name() + " ")...)
+        tmp := info[i].Name() + " "
+        tmp = strings.Replace(tmp, ".txt ", "", -1)
+        byteBody = append(byteBody, [][]byte{[]byte(tmp)}...)
     }
 
-    p := &Page{Title: "index", Body: byteBody}
+    p := &IndexPage{Title:"index", Body:byteBody}
     renderTemplate(w, "index", p)
 }
 
 var templates = template.Must(template.ParseFiles("templates/edit.html", "templates/view.html", "templates/index.html"))
 
-func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
+func renderTemplate(w http.ResponseWriter, tmpl string, p Page) {
     err := templates.ExecuteTemplate(w, tmpl+".html", p)
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
     }
 }
-
 
 var validPath = regexp.MustCompile("^/(edit|save|view|index)/([a-zA-Z0-9]*)$")
 
@@ -106,7 +128,6 @@ func main() {
     http.HandleFunc("/edit/", makeHandler(editHandler))
     http.HandleFunc("/save/", makeHandler(saveHandler))
     http.HandleFunc("/index/", makeHandler(indexHandler))
-    fmt.Println("Start")
     if *addr {
         l, err := net.Listen("tcp", "127.0.0.1:0")
         if err != nil {
@@ -121,5 +142,6 @@ func main() {
         return
     }
 
+    fmt.Println("Running")
     http.ListenAndServe(":8080", nil)
 }

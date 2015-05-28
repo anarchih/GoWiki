@@ -1,2 +1,5 @@
 <h1>{{.Title}}</h1>
-<div>{{printf "%s" .Body}}</div>
+
+{{range .Body}}
+    <li><a href="/view/{{printf "%s" .}}">{{printf "%s" .}}</a></li>
+{{end}}
