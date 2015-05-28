@@ -14,6 +14,7 @@ import (
     "regexp"
     "fmt"
     "strings"
+    "os"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 )
 type Page interface {
     save() error
+    del() error
 }
 
 type SimplePage struct {
@@ -38,9 +40,19 @@ func (p *SimplePage) save() error {
     return ioutil.WriteFile(filename, p.Body, 0600)
 }
 
+func (p *SimplePage) del() error {
+    filename := "data/" + p.Title + ".txt"
+    return os.Remove(filename)
+}
+
 func (p *IndexPage) save() error {
     filename := "tester"
     return ioutil.WriteFile(filename, p.Body[0], 0600)
+}
+
+func (p *IndexPage) del() error {
+    filename := "data/" + p.Title + ".txt"
+    return os.Remove(filename)
 }
 
 func loadPage(title string) (Page, error) {
@@ -87,6 +99,12 @@ func saveHandler(w http.ResponseWriter, r *http.Request, title string) {
     http.Redirect(w, r, "/view/"+title, http.StatusFound)
 }
 
+func delHandler(w http.ResponseWriter, r *http.Request, title string) {
+    p := &SimplePage{Title: title, Body: []byte("")}
+    _ = p.del()
+    http.Redirect(w, r, "/view/", http.StatusFound)
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request, title string) {
     info, _ := ioutil.ReadDir("data/")
     var byteBody [][]byte
@@ -109,7 +127,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p Page) {
     }
 }
 
-var validPath = regexp.MustCompile("^/(edit|save|view|index)/([a-zA-Z0-9]*)$")
+var validPath = regexp.MustCompile("^/(del|edit|save|view|index)/([a-zA-Z0-9]*)$")
 
 func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
@@ -127,6 +145,7 @@ func main() {
     http.HandleFunc("/view/", makeHandler(viewHandler))
     http.HandleFunc("/edit/", makeHandler(editHandler))
     http.HandleFunc("/save/", makeHandler(saveHandler))
+    http.HandleFunc("/del/", makeHandler(delHandler))
     http.HandleFunc("/index/", makeHandler(indexHandler))
     if *addr {
         l, err := net.Listen("tcp", "127.0.0.1:0")
