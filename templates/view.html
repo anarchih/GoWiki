@@ -1,6 +1,33 @@
-<h1>{{.Title}}</h1>
 
-<p>[<a href="/edit/{{.Title}}">edit</a>]</p>
+<html>
+    <head>
+    <style>
+        a{    
+            text-decoration:none;
+        }
+        a:visited {
+                color: #0000FF;
+        }
+        #back{
+            font-size: 30px;
+        }
+        #content{
+            border: 1px solid;
+            width: 300px;
+            height: 300px;
+        }
+    </style>    
+    </head>
+    <body>
+        <h1>{{.Title}}</h1>
 
-<div>{{printf "%s" .Body}}</div>
-<a href="/">index</a>
+        <p>
+            <span>[<a href="/edit/{{.Title}}">edit</a>]</span>
+            <span>[<a href="/del/{{.Title}}">delete</a>]</span>
+        </p>
+
+        <div id="content">{{printf "%s" .Body}}</div>
+        <a id="back" href="/">↩</a>
+
+    </body>
+</html>

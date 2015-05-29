@@ -1,5 +1,20 @@
-<h1>{{.Title}}</h1>
+<html>
+    <head>
+    <style>
+        a{    
+            text-decoration:none;
+        }
+        a:visited {
+                color: #0000FF;
+        }
+    </style>
+    </head>
+    <body>
 
-{{range .Body}}
-    <li><a href="/{{printf "%s" .}}">{{printf "%s" .}}</a></li>
-{{end}}
+        <h1>{{.Title}}</h1>
+
+        {{range .Body}}
+            <li><a href="/{{printf "%s" .}}">{{printf "%s" .}}</a></li>
+            {{end}}
+    </body>
+</html>

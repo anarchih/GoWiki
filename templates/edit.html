@@ -1,9 +1,26 @@
+<html>
+    <head>
+    <style>
+        a{    
+            text-decoration:none;
+        }
+        a:visited {
+                color: #0000FF;
+        }
+        #back{
+            font-size: 30px;
+        }
 
-<h1>Editing {{.Title}}</h1>
+    </style>
+    </head>
+    <body>
+        <h1>Editing {{.Title}}</h1>
 
-<form action="/save/{{.Title}}" method="POST">
-    <div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
-    <div><input type="submit" value="Save"></div>
-</form>
-<a href="/">index</a>
-<a href="/del/{{.Title}}">del</a>
+        <form action="/save/{{.Title}}" method="POST">
+            <div><textarea name="body" rows="20" cols="80">{{printf "%s" .Body}}</textarea></div>
+            <div><input type="submit" value="Save"></div>
+        </form>
+        <a id="back" href="/{{.Title}}">↩</a>
+    </body>
+
+</html>
